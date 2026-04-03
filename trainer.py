@@ -150,9 +150,31 @@ def save_checkpoint(
         epoch: int,
         loss: float,
         cfg=config,
-) -> str:
-    os.makedirs(cfg.CHECKPOINT_DIR, exist_ok=True)
-    path = os.path.join(cfg.CHECKPOINT_DIR, cfg.BEST_MODEL_NAME)
+        run_dir: str | None = None,
+) -> tuple[str, str]:
+    """
+    Save model checkpoint.
+
+    Creates a timestamped sub-directory under cfg.CHECKPOINT_DIR so that
+    different experimental runs never overwrite each other.
+
+    Args:
+        run_dir: If provided (e.g. from MLFlow run-id), use this name instead
+                 of generating a timestamp.
+
+    Returns:
+        (checkpoint_dir, model_path) – both as absolute strings.
+    """
+    import datetime
+
+    if run_dir is None:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = f"run_{timestamp}"
+
+    checkpoint_dir = os.path.join(cfg.CHECKPOINT_DIR, run_dir)
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    model_path = os.path.join(checkpoint_dir, cfg.BEST_MODEL_NAME)
     torch.save(
         {
             "epoch": epoch,
@@ -160,9 +182,10 @@ def save_checkpoint(
             "optimizer_state_dict": optimizer.state_dict(),
             "loss": loss,
         },
-        path,
+        model_path,
     )
-    return path
+    print(f"[Checkpoint] Saved → {model_path}")
+    return checkpoint_dir, model_path
 
 
 def generate_submission(

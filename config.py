@@ -13,21 +13,21 @@ class Config:
 
     # ─── Model ───────────────────────────────────────────────────────────────
     input_size: int = 512
-    d_model: int = 768              #512,768,d_model 能被 nhead 整除
-    nhead: int = 12                 #8,12
-    num_layers: int = 12            #4,6,8,12
-    dim_feedforward: int = 2048     #1024,2048
+    d_model: int = 512              #512,768,d_model 能被 nhead 整除
+    nhead: int = 8                 #8,12
+    num_layers: int = 4            #4,6,8,12
+    dim_feedforward: int = 1024     #1024,2048
     dropout: float = 0.2
 
     # ─── Training ────────────────────────────────────────────────────────────
-    batch_size: int = 8
-    learning_rate: float = 1e-3
-    num_epochs: int = 70
+    batch_size: int = 32
+    learning_rate: float = 1e-4
+    num_epochs: int = 30
     max_seq_len: int = 500
     grad_clip: float = 1.0
 
     # ─── Data ────────────────────────────────────────────────────────────────
-    vocab_size: int = 500  # Based on data exploration
+    vocab_size: int = 41  # Based on data exploration
 
     # ─── Checkpoint ──────────────────────────────────────────────────────────
     CHECKPOINT_DIR: str = "checkpoints"
