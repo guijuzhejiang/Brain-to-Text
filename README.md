@@ -119,7 +119,6 @@ mlflow models serve -m "models:/BrainTransformer/Production" -p 8080
 |--------|-------|
 | Train Loss | ![Train Loss](assets/train_loss.png) |
 | Validation Loss | ![Val Loss](assets/val_loss.png) |
-| Validation Accuracy | ![Val Accuracy](assets/val_accuracy.png) |
 
 ---
 
