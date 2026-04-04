@@ -70,16 +70,16 @@ class BrainDataset(Dataset):
                 x[start: start + mask_len] = 0.0
 
         # 2) Channel (electrode) dropout
-        if torch.rand(1).item() < 0.25:
+        if torch.rand(1).item() < 0.3:
             keep = torch.bernoulli(torch.full((C,), 0.9))
             x = x * keep.unsqueeze(0)
 
         # 3) Gaussian noise
-        if torch.rand(1).item() < 0.3:
+        if torch.rand(1).item() < 0.5:
             x = x + torch.randn_like(x) * 0.04
 
         # 4) Time sub-sampling (mild stretch/compress ±10%)
-        if torch.rand(1).item() < 0.2 and T > 10:
+        if torch.rand(1).item() < 0.3 and T > 10:
             fac = 0.9 + 0.2 * torch.rand(1).item()  # [0.9, 1.1]
             new_T = max(10, int(T * fac))
             idx = torch.linspace(0, T - 1, new_T).long().clamp(0, T - 1)

@@ -109,9 +109,9 @@ At runtime, `main.py` automatically discovers **all session folders** matching `
 To reduce overfitting and improve model robustness, `BrainDataset` implements a multi-stage augmentation pipeline for training:
 
 1.  **Time Masking (SpecAugment-style)**: Randomly masks 1-2 time blocks (length 5-20) with 0s (40% prob).
-2.  **Channel Dropout**: Randomly sets 15% of electrode channels to zero (25% prob).
-3.  **Gaussian Noise**: Adds additive noise (`torch.randn_like * 0.04`) to input features (30% prob).
-4.  **Time Sub-sampling**: Randomly stretches or compresses the time dimension by ±10% (20% prob).
+2.  **Channel Dropout**: Randomly sets 10% of electrode channels to zero (30% prob).
+3.  **Gaussian Noise**: Adds additive noise (`torch.randn_like * 0.04`) to input features (50% prob).
+4.  **Time Sub-sampling**: Randomly stretches or compresses the time dimension by ±10% (30% prob).
 
 These augmentations are only applied when `augment=True` and are automatically bypassed during validation or inference (`is_test=True`).
 
