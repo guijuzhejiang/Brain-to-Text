@@ -122,6 +122,34 @@ mlflow models serve -m "models:/BrainTransformer/Production" -p 8080
 
 ---
 
+## 🔎 Exploratory Data Analysis & Visualizations
+
+We provide two dedicated scripts for dataset exploration and model diagnostics, producing rich visualizations under `eda_plots/` and `visualizations/`.
+
+### 1. Dataset EDA (`eda.py`)
+Focuses on the macroscopic and statistical properties of the raw neural datasets (Train, Val, Test) across all recording sessions **before** model training:
+- **Corpus & Sentences**: Distributions of sentence words, speaking rate (WPM), and trial duration.
+- **Channel Correlation**: Generates full and Spike-Band-Power (SBP) channel-correlation heatmaps to ensure raw signal integrity.
+- **Diagnostics**: Missing values, sequence alignment, and memory usage tracking.
+
+*Example EDA plots:*
+> ![Duration and WPM Distribution](eda_plots/duration_wpm_distribution.png)
+> ![Channel Correlation](eda_plots/channel_corr_full.png)
+
+
+### 2. Model Diagnostics (`visualization.py`)
+Evaluates how well the `BrainTransformer` has learned from the data by doing forward passes on the latest saved checkpoint:
+- **Prediction Diagnostics**: Calculates per-class precise Accuracy metrics and Top-20 ranking.
+- **Class Confusion**: Renders detailed Confusion Matrices for the top most-confused phonemes.
+- **Confidence Levels**: Plots the Softmax prediction confidence spectrum.
+- **Model Capacity Analysis**: Analyzes neural sequence-to-label length ratios vs model parameters capability.
+
+*Example Visualization outputs:*
+> ![Main Model Performance Analysis](visualizations/main_analysis.png)
+> ![Additional Data Features](visualizations/additional_analysis.png)
+
+---
+
 ## 🚀 Quick Start
 
 ```bash
