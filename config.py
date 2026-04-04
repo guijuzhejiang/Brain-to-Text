@@ -35,7 +35,7 @@ class Config:
     num_epochs: int = 50
     max_seq_len: int = 500
     grad_clip: float = 1.0
-    early_stopping_patience = 10
+    early_stopping_patience = 20
     # ─── Data ────────────────────────────────────────────────────────────────
     vocab_size: int = 500  # 41? Based on data exploration
     expected_test_samples = 1450

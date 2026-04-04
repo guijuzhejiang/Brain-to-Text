@@ -57,6 +57,36 @@ class BrainDataset(Dataset):
         print(f"[BrainDataset] Loaded {len(self._index)} trials "
               f"from {len(hdf5_files)} file(s).")
 
+    def _augment(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply data augmentation to neural features (train only)."""
+        T, C = x.shape
+
+        # 1) Time masking (SpecAugment-style)
+        if torch.rand(1).item() < 0.4:
+            n_masks = torch.randint(1, 3, (1,)).item()
+            for _ in range(int(n_masks)):
+                mask_len = torch.randint(5, 20, (1,)).item()
+                start = torch.randint(0, max(1, T - mask_len), (1,)).item()
+                x[start: start + mask_len] = 0.0
+
+        # 2) Channel (electrode) dropout
+        if torch.rand(1).item() < 0.25:
+            keep = torch.bernoulli(torch.full((C,), 0.9))
+            x = x * keep.unsqueeze(0)
+
+        # 3) Gaussian noise
+        if torch.rand(1).item() < 0.3:
+            x = x + torch.randn_like(x) * 0.04
+
+        # 4) Time sub-sampling (mild stretch/compress ±10%)
+        if torch.rand(1).item() < 0.2 and T > 10:
+            fac = 0.9 + 0.2 * torch.rand(1).item()  # [0.9, 1.1]
+            new_T = max(10, int(T * fac))
+            idx = torch.linspace(0, T - 1, new_T).long().clamp(0, T - 1)
+            x = x[idx]
+
+        return x
+
     # ------------------------------------------------------------------
     def __len__(self) -> int:
         return len(self._index)
@@ -67,19 +97,13 @@ class BrainDataset(Dataset):
 
         with h5py.File(file_path, "r") as f:
             trial = f[trial_key]
-            neural_data = torch.tensor(
-                trial["input_features"][:], dtype=torch.float32
-            )
+            neural_data = torch.tensor(trial["input_features"][:], dtype=torch.float32)     #(T, F)
 
-            if getattr(self, 'augment', False) and not self.is_test and random.random() > 0.5:
-                # Add small Gaussian noise
-                noise = torch.randn_like(neural_data) * 0.01
-                neural_data = neural_data + noise
+            if getattr(self, 'augment', False) and not self.is_test:
+                neural_data = self._augment(neural_data)
 
             if not self.is_test:
-                labels = torch.tensor(
-                    trial["seq_class_ids"][:], dtype=torch.long
-                )
+                labels = torch.tensor(trial["seq_class_ids"][:], dtype=torch.long)
                 labels = torch.clamp(labels, 0, config.vocab_size - 1)
                 # Truncate / pad to max_len
                 if len(labels) > self.max_len:

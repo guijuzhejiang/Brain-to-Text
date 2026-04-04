@@ -1,6 +1,6 @@
 # 🧠 Brain-to-Text 2025
 
-> A Kaggle competition solution for decoding neural signals directly into text using a Transformer-based architecture.
+> A Kaggle competition solution for decoding neural signals directly into text using a flexible architecture supporting both Transformer and Bi-Directional LSTM models.
 
 ---
 
@@ -27,9 +27,16 @@ Brain-to-Text/
 
 ---
 
-## 🤖 Model Architecture
+## 🤖 Model Architectures
 
-The core model is a **Transformer Encoder** (`BrainTransformer`) that maps multi-electrode neural spike features to character-class logits at each time step.
+This project supports seamlessly switching between two distinct network backbones to map multi-electrode neural spike features to character-class logits:
+
+1. **Transformer Encoder (`BrainTransformer`)**: Uses multi-head self-attention, feed-forward layers, and sinusoidal positional encoding.
+2. **Bi-Directional LSTM (`BrainLSTM`)**: A recurrent neural network sequence modeling alternative employing bidirectional processing.
+
+Switch the architecture by setting `model_type` to `"Transformer"` or `"LSTM"` in `config.py`.
+
+**Transformer View:**
 
 ```
 Input (B, T, 512)
@@ -58,6 +65,14 @@ Linear Head  →  (B, T, vocab_size)
 | `dropout`         | 0.2     |
 | `vocab_size`      | 500     |
 
+**LSTM specific Hyper-parameters:**
+| Hyper-parameter       | Default |
+|-----------------------|---------|
+| `lstm_hidden_size`    | 512     |
+| `lstm_num_layers`     | 3       |
+| `lstm_dropout`        | 0.3     |
+| `lstm_bidirectional`  | True    |
+
 ---
 
 ## ⚙️ Configuration (`config.py`)
@@ -73,8 +88,11 @@ class Config:
     VAL_FILENAME   = "data_val.hdf5"
     TEST_FILENAME  = "data_test.hdf5"
 
-    # Model
-    d_model = 512 ; nhead = 8 ; num_layers = 4 ...
+    # Model Selection
+    model_type = "LSTM"              # "LSTM" or "Transformer"
+    input_size = 512
+    # Transformer: d_model = 512 ; nhead = 8 ...
+    # LSTM: lstm_hidden_size = 512 ; lstm_num_layers = 3 ...
 
     # MLFlow
     MLFLOW_TRACKING_URI    = "http://127.0.0.1:5000"
@@ -83,6 +101,19 @@ class Config:
 ```
 
 At runtime, `main.py` automatically discovers **all session folders** matching `SESSION_GLOB` — simply drop a new `t15.YYYY.MM.DD/` directory into `DATA_DIR` and it will be picked up without any code changes.
+
+---
+
+## 🧬 Data Augmentation
+
+To reduce overfitting and improve model robustness, `BrainDataset` implements a multi-stage augmentation pipeline for training:
+
+1.  **Time Masking (SpecAugment-style)**: Randomly masks 1-2 time blocks (length 5-20) with 0s (40% prob).
+2.  **Channel Dropout**: Randomly sets 15% of electrode channels to zero (25% prob).
+3.  **Gaussian Noise**: Adds additive noise (`torch.randn_like * 0.04`) to input features (30% prob).
+4.  **Time Sub-sampling**: Randomly stretches or compresses the time dimension by ±10% (20% prob).
+
+These augmentations are only applied when `augment=True` and are automatically bypassed during validation or inference (`is_test=True`).
 
 ---
 
@@ -137,8 +168,8 @@ Focuses on the macroscopic and statistical properties of the raw neural datasets
 > ![Channel Correlation](eda_plots/channel_corr_full.png)
 
 
-### 2. Model Diagnostics (`visualization.py`)
-Evaluates how well the `BrainTransformer` has learned from the data by doing forward passes on the latest saved checkpoint:
+### 2. Model Diagnostics (`visualization_transformer.py` & `visualization_LSTM.py`)
+Evaluates how well your chosen model has learned from the data by doing forward passes on the latest saved checkpoint. Please run the corresponding script related to your active `config.model_type`:
 - **Prediction Diagnostics**: Calculates per-class precise Accuracy metrics and Top-20 ranking.
 - **Class Confusion**: Renders detailed Confusion Matrices for the top most-confused phonemes.
 - **Confidence Levels**: Plots the Softmax prediction confidence spectrum.

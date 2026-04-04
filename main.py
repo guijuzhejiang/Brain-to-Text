@@ -108,7 +108,7 @@ def main():
         optimizer,
         mode='min',
         patience=5,
-        factor=0.5
+        factor=0.2
     )
 
     # ── 4. MLFlow setup ───────────────────────────────────────────────────────
