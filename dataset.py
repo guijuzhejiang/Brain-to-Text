@@ -9,6 +9,7 @@ from __future__ import annotations
 import h5py
 import torch
 import torch.nn.functional as F
+import random
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from typing import List, Tuple
@@ -35,6 +36,7 @@ class BrainDataset(Dataset):
             hdf5_files: List[str],
             is_test: bool = False,
             max_len: int = config.max_seq_len,
+            augment: bool = False,
     ) -> None:
         super().__init__()
 
@@ -43,6 +45,7 @@ class BrainDataset(Dataset):
 
         self.is_test = is_test
         self.max_len = max_len
+        self.augment = augment
 
         # Build a flat index: (file_path, trial_key)
         self._index: List[Tuple[str, str]] = []
@@ -67,6 +70,11 @@ class BrainDataset(Dataset):
             neural_data = torch.tensor(
                 trial["input_features"][:], dtype=torch.float32
             )
+
+            if getattr(self, 'augment', False) and not self.is_test and random.random() > 0.5:
+                # Add small Gaussian noise
+                noise = torch.randn_like(neural_data) * 0.01
+                neural_data = neural_data + noise
 
             if not self.is_test:
                 labels = torch.tensor(

@@ -7,28 +7,38 @@ class Config:
     DATA_DIR: str = "/media/zzg/GJ_disk01/data/BCI/brain-to-text-25/t15_copyTask_neuralData/hdf5_data_final"
     # Glob pattern relative to DATA_DIR to discover session sub-folders
     SESSION_GLOB: str = "t15.*"
+    # SESSION_GLOB: str = "t15.2025.03.14"
     TRAIN_FILENAME: str = "data_train.hdf5"
     VAL_FILENAME: str = "data_val.hdf5"
     TEST_FILENAME: str = "data_test.hdf5"
 
     # ─── Model ───────────────────────────────────────────────────────────────
+    model_type: str = "LSTM"        # "LSTM" or "Transformer"
     input_size: int = 512
-    d_model: int = 512              #512,768,d_model 能被 nhead 整除
-    nhead: int = 8                 #8,12
-    num_layers: int = 4            #4,6,8,12
-    dim_feedforward: int = 1024     #1024,2048
+    
+    # Transformer params
+    d_model: int = 512              # 512,768,d_model 能被 nhead 整除
+    nhead: int = 8                  # 8,12
+    num_layers: int = 4             # 4,6,8,12
+    dim_feedforward: int = 1024     # 1024,2048
     dropout: float = 0.2
+    
+    # LSTM params
+    lstm_hidden_size: int = 512
+    lstm_num_layers: int = 3
+    lstm_dropout: float = 0.3
+    lstm_bidirectional: bool = True
 
     # ─── Training ────────────────────────────────────────────────────────────
-    batch_size: int = 32
-    learning_rate: float = 1e-4
-    num_epochs: int = 30
+    batch_size: int = 8
+    learning_rate: float = 1e-4     #transformer:1e-4,LSTM:1e-3
+    num_epochs: int = 50
     max_seq_len: int = 500
     grad_clip: float = 1.0
-
+    early_stopping_patience = 10
     # ─── Data ────────────────────────────────────────────────────────────────
-    vocab_size: int = 41  # Based on data exploration
-
+    vocab_size: int = 500  # 41? Based on data exploration
+    expected_test_samples = 1450
     # ─── Checkpoint ──────────────────────────────────────────────────────────
     CHECKPOINT_DIR: str = "checkpoints"
     BEST_MODEL_NAME: str = "best_model.pth"

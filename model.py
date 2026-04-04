@@ -95,8 +95,63 @@ class BrainTransformer(nn.Module):
         logits = self.output_proj(x)     # → (B, T, vocab_size)
         return logits
 
-def build_model(cfg=config, device: torch.device | str = "cpu") -> BrainTransformer:
-    model = BrainTransformer(cfg).to(device)
+class BrainLSTM(nn.Module):
+    """
+    LSTM-based model for brain-to-text decoding.
+    """
+    def __init__(self, cfg=config) -> None:
+        super().__init__()
+        self.cfg = cfg
+
+        self.lstm = nn.LSTM(
+            input_size=cfg.input_size,
+            hidden_size=cfg.lstm_hidden_size,
+            num_layers=cfg.lstm_num_layers,
+            batch_first=True,
+            bidirectional=cfg.lstm_bidirectional,
+            dropout=cfg.lstm_dropout if cfg.lstm_num_layers > 1 else 0
+        )
+
+        lstm_output_size = cfg.lstm_hidden_size * (2 if cfg.lstm_bidirectional else 1)
+        self.output_proj = nn.Linear(lstm_output_size, cfg.vocab_size)
+        self.dropout = nn.Dropout(cfg.lstm_dropout)
+
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        for name, param in self.lstm.named_parameters():
+            if 'weight' in name:
+                nn.init.orthogonal_(param)
+            elif 'bias' in name:
+                nn.init.constant_(param, 0.0)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        src_key_padding_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        lengths = None
+        if src_key_padding_mask is not None:
+            lengths = (~src_key_padding_mask).sum(dim=1).cpu()
+
+        if lengths is not None:
+            x = nn.utils.rnn.pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
+
+        lstm_out, _ = self.lstm(x)
+
+        if lengths is not None:
+            lstm_out, _ = nn.utils.rnn.pad_packed_sequence(lstm_out, batch_first=True)
+
+        lstm_out = self.dropout(lstm_out)
+        logits = self.output_proj(lstm_out)
+        return logits
+
+def build_model(cfg=config, device: torch.device | str = "cpu") -> nn.Module:
+    if getattr(cfg, 'model_type', 'LSTM') == 'Transformer':
+        model = BrainTransformer(cfg).to(device)
+    else:
+        model = BrainLSTM(cfg).to(device)
+        
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"[BrainTransformer] Parameters: {n_params:,}")
+    print(f"[{model.__class__.__name__}] Parameters: {n_params:,}")
     return model

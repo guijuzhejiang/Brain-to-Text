@@ -32,9 +32,9 @@ from trainer import (
     validate,
     save_checkpoint,
     generate_submission,
-    generate_simple_submission,
 )
 from torch.utils.data import DataLoader
+import datetime
 
 
 def _discover_files(data_dir: str, session_glob: str, filename: str):
@@ -68,13 +68,13 @@ def main():
     explore_files(train_files, n_preview=3)
 
     # ── 2. Datasets & DataLoaders ─────────────────────────────────────────────
-    train_dataset = BrainDataset(train_files, is_test=False, max_len=config.max_seq_len)
+    train_dataset = BrainDataset(train_files, is_test=False, max_len=config.max_seq_len, augment=True)
     train_loader = DataLoader(
         train_dataset,
         batch_size=config.batch_size,
         shuffle=True,
         collate_fn=collate_fn,
-        num_workers=4,
+        num_workers=8,
         pin_memory=True,
     )
 
@@ -101,8 +101,14 @@ def main():
         lr=config.learning_rate,
         weight_decay=0.01
     )
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=config.num_epochs
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    #     optimizer, T_max=config.num_epochs
+    # )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode='min',
+        patience=5,
+        factor=0.5
     )
 
     # ── 4. MLFlow setup ───────────────────────────────────────────────────────
@@ -110,7 +116,8 @@ def main():
     mlflow.set_experiment(config.MLFLOW_EXPERIMENT_NAME)
 
     # ── 5. Training loop (inside MLFlow run) ──────────────────────────────────
-    with mlflow.start_run() as run:
+    run_name = f"run_{config.model_type}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    with mlflow.start_run(run_name=run_name) as run:
         print(f"\n[MLFlow] Run ID : {run.info.run_id}")
         print(f"[MLFlow] Experiment: {config.MLFLOW_EXPERIMENT_NAME}")
 
@@ -132,12 +139,13 @@ def main():
                 "num_train_files": len(train_files),
                 "num_val_files": len(val_files),
                 "optimizer": "AdamW",
-                "scheduler": "CosineAnnealingLR",
+                "scheduler": "ReduceLROnPlateau",
             }
         )
 
         best_val_loss = float("inf")
         best_ckpt_path: str | None = None
+        patience_counter = 0
 
         print("\n[main] Starting training...\n")
         for epoch in range(1, config.num_epochs + 1):
@@ -152,7 +160,7 @@ def main():
                 device, epoch, config, run
             )
 
-            scheduler.step()
+            scheduler.step(val_loss)
             current_lr = scheduler.get_last_lr()[0]
             mlflow.log_metric("lr", current_lr, step=epoch)
 
@@ -166,8 +174,15 @@ def main():
             # ── Checkpoint best model ──────────────────────────────────────
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
-                best_ckpt_path = save_checkpoint(model, optimizer, epoch, val_loss, config)
+                patience_counter = 0
+                best_ckpt_path = save_checkpoint(model, optimizer, epoch, val_loss, val_acc, config, run_dir=run_name)
                 print(f"  ✓ Saved best checkpoint → {best_ckpt_path}  (val_loss={val_loss:.4f})")
+            else:
+                patience_counter += 1
+                print(f"  ⏳ Early stopping counter: {patience_counter}/{config.early_stopping_patience}")
+            if patience_counter >= config.early_stopping_patience:
+                print("🛑 Early stopping triggered!")
+                break
 
         # ── 6. Log best metrics & register model ──────────────────────────
         mlflow.log_metric("best_val_loss", best_val_loss)
@@ -195,15 +210,9 @@ def main():
     # ── 7. Generate submission ─────────────────────────────────────────────────
     if test_files:
         print("\n[main] Generating submission...")
-        try:
-            generate_submission(
-                model, test_files, config.SUBMISSION_FILE, device, config
-            )
-        except Exception as exc:
-            print(f"[main] Batch submission failed ({exc}), falling back to trial-by-trial...")
-            generate_simple_submission(
-                model, test_files[0], config.SUBMISSION_FILE, device, config
-            )
+        generate_submission(
+            model, test_files, config.SUBMISSION_FILE, device, config
+        )
     else:
         print("\n[main] No test files found – creating dummy submission...")
         import pandas as pd
