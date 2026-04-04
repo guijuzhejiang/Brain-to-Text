@@ -24,18 +24,18 @@ class Config:
     dropout: float = 0.2
     
     # LSTM params
-    lstm_hidden_size: int = 512
-    lstm_num_layers: int = 3
-    lstm_dropout: float = 0.3
+    lstm_hidden_size: int = 768     # 512,768,1024
+    lstm_num_layers: int = 4        # 3,4,5
+    lstm_dropout: float = 0.3       # 0.3,0.4,0.5
     lstm_bidirectional: bool = True
 
     # ─── Training ────────────────────────────────────────────────────────────
     batch_size: int = 8
     learning_rate: float = 1e-4     #transformer:1e-4,LSTM:1e-3
-    num_epochs: int = 50
+    num_epochs: int = 100
     max_seq_len: int = 500
     grad_clip: float = 1.0
-    early_stopping_patience = 20
+    early_stopping_patience = 30
     # ─── Data ────────────────────────────────────────────────────────────────
     vocab_size: int = 500  # 41? Based on data exploration
     expected_test_samples = 1450

@@ -122,26 +122,39 @@ def main():
         print(f"[MLFlow] Experiment: {config.MLFLOW_EXPERIMENT_NAME}")
 
         # --- Log all config hyper-parameters ---
-        mlflow.log_params(
-            {
-                "input_size": config.input_size,
+        params = {
+            "model_type": config.model_type,
+            "input_size": config.input_size,
+            "batch_size": config.batch_size,
+            "learning_rate": config.learning_rate,
+            "num_epochs": config.num_epochs,
+            "max_seq_len": config.max_seq_len,
+            "grad_clip": config.grad_clip,
+            "vocab_size": config.vocab_size,
+            "early_stopping_patience": config.early_stopping_patience,
+            "num_train_files": len(train_files),
+            "num_val_files": len(val_files),
+            "optimizer": "AdamW",
+            "scheduler": "ReduceLROnPlateau",
+        }
+        
+        if config.model_type == "Transformer":
+            params.update({
                 "d_model": config.d_model,
                 "nhead": config.nhead,
                 "num_layers": config.num_layers,
                 "dim_feedforward": config.dim_feedforward,
                 "dropout": config.dropout,
-                "batch_size": config.batch_size,
-                "learning_rate": config.learning_rate,
-                "num_epochs": config.num_epochs,
-                "max_seq_len": config.max_seq_len,
-                "grad_clip": config.grad_clip,
-                "vocab_size": config.vocab_size,
-                "num_train_files": len(train_files),
-                "num_val_files": len(val_files),
-                "optimizer": "AdamW",
-                "scheduler": "ReduceLROnPlateau",
-            }
-        )
+            })
+        else:  # LSTM
+            params.update({
+                "lstm_hidden_size": config.lstm_hidden_size,
+                "lstm_num_layers": config.lstm_num_layers,
+                "lstm_dropout": config.lstm_dropout,
+                "lstm_bidirectional": config.lstm_bidirectional,
+            })
+            
+        mlflow.log_params(params)
 
         best_val_loss = float("inf")
         best_ckpt_path: str | None = None
