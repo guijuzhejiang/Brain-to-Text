@@ -15,7 +15,7 @@ class Config:
     # ─── Model ───────────────────────────────────────────────────────────────
     model_type: str = "LSTM"        # "LSTM" or "Transformer"
     input_size: int = 512
-    
+
     # Transformer params
     d_model: int = 512              # 512,768,d_model 能被 nhead 整除
     nhead: int = 8                  # 8,12
@@ -32,12 +32,12 @@ class Config:
     # ─── Training ────────────────────────────────────────────────────────────
     batch_size: int = 8
     learning_rate: float = 1e-4     #transformer:1e-4,LSTM:1e-3
-    num_epochs: int = 100
+    num_epochs: int = 30
     max_seq_len: int = 500
     grad_clip: float = 1.0
-    early_stopping_patience = 30
+    early_stopping_patience = 10
     # ─── Data ────────────────────────────────────────────────────────────────
-    vocab_size: int = 500  # 41? Based on data exploration
+    vocab_size: int = 41  # 41,500 Based on data exploration
     expected_test_samples = 1450
     # ─── Checkpoint ──────────────────────────────────────────────────────────
     CHECKPOINT_DIR: str = "checkpoints"

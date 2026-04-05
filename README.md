@@ -21,6 +21,7 @@ Brain-to-Text/
 ├── model.py           # PositionalEncoding + BrainTransformer
 ├── trainer.py         # train_epoch / validate / checkpoint / submission
 ├── main.py            # End-to-end training pipeline entry point
+├── optuna_tune.py     # Automated hyperparameter tuning (Optuna + MLFlow)
 ├── assets/            # Training curve plots
 └── requirements.txt   # Python dependencies
 ```
@@ -140,6 +141,23 @@ python main.py
 
 # Serve the registered model (Production stage)
 mlflow models serve -m "models:/BrainTransformer/Production" -p 8080
+```
+
+---
+
+## 🎯 Hyperparameter Tuning (`optuna_tune.py`)
+
+Automate the search for optimal hyper-parameters using **[Optuna](https://optuna.org/)**. Supports both Transformer and LSTM tuning with integrated **MLFlow Nested Runs**.
+
+- **Automatic Pruning**: Stops poorly performing trials early to save time.
+- **Hierarchical Tracking**: Main study results logged to a parent run with individual trials as nested child runs.
+
+```bash
+# Tune Transformer (default)
+python optuna_tune.py --model Transformer --trials 50
+
+# Tune LSTM
+python optuna_tune.py --model LSTM --trials 50
 ```
 
 ---
