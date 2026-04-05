@@ -103,7 +103,7 @@ def objective(trial: optuna.Trial, model_type: str):
                 weight_decay=0.01
             )
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode='min', patience=5, factor=0.2
+                optimizer, mode='min', patience=4, factor=0.2
             )
 
             best_val_loss = float("inf")
