@@ -45,7 +45,7 @@ class Config:
 
     # ─── MLFlow ──────────────────────────────────────────────────────────────
     MLFLOW_TRACKING_URI: str = "http://127.0.0.1:5000"
-    MLFLOW_EXPERIMENT_NAME: str = "brain-to-text-transformer"
+    MLFLOW_EXPERIMENT_NAME: str = "brain-to-text"
     # Set to "" / None to skip registration
     MLFLOW_MODEL_NAME: str = "BrainTransformer"
 
