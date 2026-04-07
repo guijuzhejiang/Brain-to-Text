@@ -1,5 +1,7 @@
 # 🧠 Brain-to-Text 2025
 
+[Chinese Version](./README_ZH.md)
+
 > A Kaggle competition solution for decoding neural signals directly into text using a flexible architecture supporting both Transformer and Bi-Directional LSTM models.
 
 ---
@@ -140,8 +142,13 @@ mlflow server --host 127.0.0.1 --port 5000
 python main.py
 
 # Serve the registered model (Production stage)
-mlflow models serve -m "models:/BrainTransformer/Production" -p 8080
+mlflow models serve -m "models:/BrainTransformer/Production" -p 8081
 ```
+
+Visit **[http://localhost:5000](http://localhost:5000)** in your browser to view detailed information about your experiment tracking in the MLFlow UI.
+
+> ![MLFlow Runs](assets/MLFlow_Runs.png)
+> *The experiment list in MLFlow UI, tracking parameters and metrics for each run.*
 
 ---
 
@@ -159,6 +166,16 @@ python optuna_tune.py --model Transformer --trials 50
 # Tune LSTM
 python optuna_tune.py --model LSTM --trials 50
 ```
+
+Once tuning begins, you can start the **optuna-dashboard** and visit it at **[http://127.0.0.1:8080](http://127.0.0.1:8080)** in your browser to visualize the tuning process in real-time:
+```bash
+# Start the dashboard (example for Transformer)
+optuna-dashboard sqlite:///transformer_optuna.db
+```
+
+> ![Optuna Trials](assets/optuna_trials.png)
+> 
+> *Tracing curves of loss values for each experiment displayed in optuna-dashboard.*
 
 ---
 

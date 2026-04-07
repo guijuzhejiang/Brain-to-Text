@@ -20,7 +20,7 @@ def _discover_files(data_dir: str, session_glob: str, filename: str):
     return files
 
 def objective(trial: optuna.Trial, model_type: str):
-    with mlflow.start_run(run_name=f"trial_{trial.number}", nested=True) as run:
+    with mlflow.start_run(run_name=f"trial_{trial.number}") as run:
         # ── 0. Create a fresh config object for this trial ─────────────────────────
         trial_config = Config()
         
@@ -195,30 +195,21 @@ def main():
     experiment_name = f"{Config().MLFLOW_EXPERIMENT_NAME}_{model_type.lower()}_tuning"
     mlflow.set_experiment(experiment_name)
     
-    run_name = f"optuna_study_{model_type}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
     try:
-        with mlflow.start_run(run_name=run_name):
-            study.optimize(lambda trial: objective(trial, model_type), n_trials=args.trials)
-            
-            # Log best overall params to the parent run
-            if len(study.trials) > 0:
-                try:
-                    best_trial = study.best_trial
-                    mlflow.log_params({f"best_{k}": v for k, v in best_trial.params.items()})
-                    mlflow.log_metric("overall_best_val_loss", best_trial.value)
-                except ValueError:
-                    pass
+        study.optimize(lambda trial: objective(trial, model_type), n_trials=args.trials)
+        
+        # We can still log the overall best params to the console, or simply rely on Optuna/MLflow
+        if len(study.trials) > 0:
+            best_trial = study.best_trial
+            print("\n[+] Tuning complete!")
+            print("[+] Best trial:")
+            print(f"  Value (val_loss): {best_trial.value:.4f}")
+            print("  Params: ")
+            for key, value in best_trial.params.items():
+                print(f"    {key}: {value}")
+                
     except KeyboardInterrupt:
         print("\n[!] Tuning interrupted by user.")
-        
-    print("\n[+] Tuning complete!")
-    print("[+] Best trial:")
-    best_trial = study.best_trial
-    print(f"  Value (val_loss): {best_trial.value:.4f}")
-    print("  Params: ")
-    for key, value in best_trial.params.items():
-        print(f"    {key}: {value}")
 
 if __name__ == "__main__":
     main()
